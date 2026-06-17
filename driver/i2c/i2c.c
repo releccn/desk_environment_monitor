@@ -145,25 +145,18 @@ uint8_t i2c_write_bytes(uint8_t sla_w, uint8_t len, uint8_t *buff) {
 	buff - Pointer to the array where bytes to write are stored.
 	*/
 	
-	if (i2c_start() != I2C_SUCCESS) { // Start condition.
-		i2c_stop();
-		return I2C_ERROR;
-	}
-
-	if (i2c_write_byte(sla_w) != I2C_SUCCESS) { // Write slave address + write bit.
-		i2c_stop();
-		return I2C_ERROR;
-	}
+	// Start condition.
+	if (i2c_start() != I2C_SUCCESS) { i2c_stop(); return I2C_ERROR; }
 	
-	for (uint8_t i = 0; i < len; ++i) { // Write all bytes from array. 
-		if (i2c_write_byte(buff[i]) != I2C_SUCCESS) {
-			i2c_stop(); 
-			return I2C_ERROR;
-		}
+	// Write slave address + write bit.
+	if (i2c_write_byte(sla_w) != I2C_SUCCESS) { i2c_stop(); return I2C_ERROR; }
+	
+	// Write all bytes from array. 
+	for (uint8_t i = 0; i < len; ++i) {
+		if (i2c_write_byte(buff[i]) != I2C_SUCCESS) { i2c_stop(); return I2C_ERROR; }
 	}
 	
 	i2c_stop(); // Stop condition.
-	
 	return I2C_SUCCESS;
 }
 
@@ -174,30 +167,21 @@ uint8_t i2c_read_bytes(uint8_t sla_r, uint8_t len, uint8_t *buff) {
 	buff - pointer to array where read bytes are stored.
 	*/
 	
-	if (i2c_start() != I2C_SUCCESS) { // Start condition.
-		i2c_stop();
-		return I2C_ERROR;
+	// Start condition.
+	if (i2c_start() != I2C_SUCCESS) { i2c_stop(); return I2C_ERROR; }
+	
+	// Write slave address + read bit.
+	if (i2c_write_byte(sla_r) != I2C_SUCCESS) { i2c_stop(); return I2C_ERROR; }
+	
+	// Read (len - 2) bytes from array with ACK.
+	for (uint8_t i = 0; i < len - 1; ++i) {
+		if (i2c_read_byte(ACK, &buff[i]) != I2C_SUCCESS) { i2c_stop(); return I2C_ERROR; }
 	}
 	
-	if (i2c_write_byte(sla_r) != I2C_SUCCESS) { // Write slave address + read bit.
-		i2c_stop();
-		return I2C_ERROR;
-	}
-	
-	for (uint8_t i = 0; i < len - 1; ++i) { // Read (len - 2) bytes from array with ACK.
-		if (i2c_read_byte(ACK, &buff[i]) != I2C_SUCCESS) {
-			i2c_stop();
-			return I2C_ERROR;
-		}
-	}
-	
-	if (i2c_read_byte(NACK, &buff[len - 1]) != I2C_SUCCESS) { // Read (len - 1), last byte from array with NACK.
-		i2c_stop();
-		return I2C_ERROR;
-	}
+	// Read (len - 1), last byte from array with NACK.
+	if (i2c_read_byte(NACK, &buff[len - 1]) != I2C_SUCCESS) { i2c_stop(); return I2C_ERROR; }
 	
 	i2c_stop(); // Stop condition.
-	
 	return I2C_SUCCESS;
 	
 }

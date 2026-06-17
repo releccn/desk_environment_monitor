@@ -10,8 +10,6 @@
 #include <stdint.h>
 #include "i2c.h"
 
-
-
 void i2c_init() {
 	/* To initialize TWI/I2C, the following must be configured:
 		TWBR (bit rate register), 
@@ -28,12 +26,12 @@ void i2c_init() {
 	
 	TWBR = (1 << 5); // 32, 0b00100000 (Modify ALL bits in register)
 	
-	TWSR &= ~(1 << TWPS1) | ~(1 << TWPS0); // 0b00000000 (TWPS1 = 0, TWPS0 = 0, Prescaler Value = 1) (Modify ONLY prescalar bits in register)
+	TWSR &= ~((1 << TWPS1) | (1 << TWPS0)); // 0bxxxxx-00 (TWPS1 = 0, TWPS0 = 0, Prescaler Value = 1) (Modify ONLY prescalar bits in register)
 	
 	TWCR |= (1 << TWEN); // Set Enable Bit
 }
 
-void i2c_start() {
+uint8_t i2c_start() {
 	/* 
 	To enter MT (Master Transmitter) or MR (Master Receiver) mode.
 	
@@ -52,11 +50,12 @@ void i2c_start() {
 	// Verify that successful START condition. Otherwise, error. 
 	if ((TWSR & 0xF8) != TW_START) { // TW_START = 0x08 (Status Code for TWSR)
 		i2c_error();
-		return;
+		return I2C_ERROR;
 	}
 	
 	// Clear TWSTA Bit once START condition has been transmitted.
-	
+	TWCR &= ~(1 << TWSTA);
+	return I2C_SUCCESS;
 }
 
 void i2c_stop() {
@@ -75,33 +74,73 @@ void i2c_stop() {
 	// TWINT Flag is NOT set to indicate STOP has been transmitted.
 }
 
-void i2c_write_byte(uint8_t data) {
+uint8_t i2c_write_byte(uint8_t data) {
 	// Assume START condition has been successfully transmitted.
 	
 	// Note: To enter MT (Master Transmitter) mode, SLA+W must be written to TWDR.
+	// 		 To enter MR (Master Receiver) mode. SLA+R must be written to TWDR.
 
 	// This function writes a byte to the bus (regardless of if it is an address or actual data).
 	
-	// Data transmission.
+	// Address/Data transmission.
 	TWDR = data;
-	TWCR |= (1 << TWINT); // Clear TWINT to start data transmission.
+	TWCR |= (1 << TWINT); // Clear TWINT to start address/data transmission.
 	
-	// Wait for TWINT flag to set by hardware to indicate DATA has been transmitted
+	// Wait for TWINT flag to set by hardware to indicate address/data has been transmitted
 	//												  and ACK/NACK has been received
 	while (!(TWCR & (1 << TWINT)));
 	
 	// Verify DATA has been transmitted and ACK is received.
-	// !!! There is a logic error here. Look again.
-	if (((TWSR & 0xF8) != TW_MT_SLA_ACK)) | ((TWSR & 0xF8) != TW_MT_DATA_ACK))) { // TW_MT_DATA_ACK = 0x28 (Status Code for TWSR)
-		i2c_error();															  // TW_MT_SLA_ACK = 0x18 (Status Code for TWSR)
-		return;
+	if (((TWSR & 0xF8) != TW_MT_SLA_ACK) && ((TWSR & 0xF8) != TW_MT_DATA_ACK)) { // TW_MT_DATA_ACK = 0x28 (Status Code for TWSR)
+		i2c_error();															 // TW_MT_SLA_ACK = 0x18 (Status Code for TWSR)
+		return I2C_ERROR;
 	}
 	
+	return I2C_SUCCESS;
 	// End by sending STOP condition.
 }
 
+uint8_t i2c_read_byte(uint8_t ACK_NACK, uint8_t *data) {
+	// Assume START condition has been successfully transmitted and MR mode.
+	// A - ACK (0) , N - NACK (1)
+	
+	// Returns byte received from TWDR (Data Register).
+	
+	if (ACK_NACK == 0) {
+		TWCR |= (1 << TWEA) | (1 << TWINT); // Set TWEA (enable ack) bit, and clear TWINT to begin read.
+		
+		while (!(TWCR & (1 << TWINT))); // Poll till TWINT flag is set by hardware
+										// to indicate data can be read from TWDR.
+										
+		// Verify that data byte has been received, ACK returned. (Check TWSR).
+		if ((TWSR & 0xF8) != TW_MR_DATA_ACK) {
+			i2c_error(); // for UART													
+			return I2C_ERROR;
+		}
+		*data = TWDR; // Write TWDR to user-defined variable address.
+		return I2C_SUCCESS; // Return byte from TWDR (data register).
+		
+	} else if (ACK_NACK == 1) { // Last byte has been received.
+		// MR should inform ST by sending NACK (i.e. clearing TWEA) after last received data byte.
+		TWCR = (TWCR & ~(1 << TWEA)) | (1 << TWINT); // Clear TWEA (enable ack) bit, and clear TWINT to begin read.
+		
+		while (!(TWCR & (1 << TWINT))); // Poll till TWINT flag is set by hardware
+										// to indicate data can be read from TWDR.
+		
+		// Verify that data byte has been received, NACK returned.	(Check TWSR).
+		if ((TWSR & 0xF8) != TW_MR_DATA_NACK) {
+			i2c_error(); // for UART
+			return I2C_ERROR;
+		}
+		
+		*data = TWDR; // Write TWDR to user-defined variable address.
+		return I2C_SUCCESS; // Return byte from TWDR (data register).
+	} 
+	
+	return I2C_ERROR;
+}
 
 void i2c_error() {
-	// Print error to UART
-	return 0;
+	// TODO: Implement printing error to UART
+	
 }

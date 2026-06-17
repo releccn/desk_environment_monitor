@@ -7,7 +7,6 @@
 
 #include <avr/io.h>
 #include <util/twi.h>
-#include <stdint.h>
 #include "i2c.h"
 
 void i2c_init() {
@@ -49,7 +48,7 @@ uint8_t i2c_start() {
 	
 	// Verify that successful START condition. Otherwise, error. 
 	if ((TWSR & 0xF8) != TW_START) { // TW_START = 0x08 (Status Code for TWSR)
-		i2c_error();
+		i2c_error(); // for UART
 		return I2C_ERROR;
 	}
 	
@@ -92,12 +91,11 @@ uint8_t i2c_write_byte(uint8_t data) {
 	
 	// Verify DATA has been transmitted and ACK is received.
 	if (((TWSR & 0xF8) != TW_MT_SLA_ACK) && ((TWSR & 0xF8) != TW_MT_DATA_ACK)) { // TW_MT_DATA_ACK = 0x28 (Status Code for TWSR)
-		i2c_error();															 // TW_MT_SLA_ACK = 0x18 (Status Code for TWSR)
+		i2c_error(); // for UART												 // TW_MT_SLA_ACK = 0x18 (Status Code for TWSR)
 		return I2C_ERROR;
 	}
 	
 	return I2C_SUCCESS;
-	// End by sending STOP condition.
 }
 
 uint8_t i2c_read_byte(uint8_t ACK_NACK, uint8_t *data) {
@@ -106,7 +104,7 @@ uint8_t i2c_read_byte(uint8_t ACK_NACK, uint8_t *data) {
 	
 	// Returns byte received from TWDR (Data Register).
 	
-	if (ACK_NACK == 0) {
+	if (ACK_NACK == ACK) {
 		TWCR |= (1 << TWEA) | (1 << TWINT); // Set TWEA (enable ack) bit, and clear TWINT to begin read.
 		
 		while (!(TWCR & (1 << TWINT))); // Poll till TWINT flag is set by hardware
@@ -120,7 +118,7 @@ uint8_t i2c_read_byte(uint8_t ACK_NACK, uint8_t *data) {
 		*data = TWDR; // Write TWDR to user-defined variable address.
 		return I2C_SUCCESS; // Return byte from TWDR (data register).
 		
-	} else if (ACK_NACK == 1) { // Last byte has been received.
+	} else if (ACK_NACK == NACK) { // Last byte has been received.
 		// MR should inform ST by sending NACK (i.e. clearing TWEA) after last received data byte.
 		TWCR = (TWCR & ~(1 << TWEA)) | (1 << TWINT); // Clear TWEA (enable ack) bit, and clear TWINT to begin read.
 		
@@ -138,6 +136,70 @@ uint8_t i2c_read_byte(uint8_t ACK_NACK, uint8_t *data) {
 	} 
 	
 	return I2C_ERROR;
+}
+
+uint8_t i2c_write_bytes(uint8_t sla_w, uint8_t len, uint8_t *buff) {
+	/*
+	sla_w - Slave address + Write bit.
+	len - Amount of bytes to write.
+	buff - Pointer to the array where bytes to write are stored.
+	*/
+	
+	if (i2c_start() != I2C_SUCCESS) { // Start condition.
+		i2c_stop();
+		return I2C_ERROR;
+	}
+
+	if (i2c_write_byte(sla_w) != I2C_SUCCESS) { // Write slave address + write bit.
+		i2c_stop();
+		return I2C_ERROR;
+	}
+	
+	for (uint8_t i = 0; i < len; ++i) { // Write all bytes from array. 
+		if (i2c_write_byte(buff[i]) != I2C_SUCCESS) {
+			i2c_stop(); 
+			return I2C_ERROR;
+		}
+	}
+	
+	i2c_stop(); // Stop condition.
+	
+	return I2C_SUCCESS;
+}
+
+uint8_t i2c_read_bytes(uint8_t sla_r, uint8_t len, uint8_t *buff) {
+	/*
+	sla  - slave address.
+	len  - amount of bytes to write.
+	buff - pointer to array where read bytes are stored.
+	*/
+	
+	if (i2c_start() != I2C_SUCCESS) { // Start condition.
+		i2c_stop();
+		return I2C_ERROR;
+	}
+	
+	if (i2c_write_byte(sla_r) != I2C_SUCCESS) { // Write slave address + read bit.
+		i2c_stop();
+		return I2C_ERROR;
+	}
+	
+	for (uint8_t i = 0; i < len - 1; ++i) { // Read (len - 2) bytes from array with ACK.
+		if (i2c_read_byte(ACK, &buff[i]) != I2C_SUCCESS) {
+			i2c_stop();
+			return I2C_ERROR;
+		}
+	}
+	
+	if (i2c_read_byte(NACK, &buff[len - 1]) != I2C_SUCCESS) { // Read (len - 1), last byte from array with NACK.
+		i2c_stop();
+		return I2C_ERROR;
+	}
+	
+	i2c_stop(); // Stop condition.
+	
+	return I2C_SUCCESS;
+	
 }
 
 void i2c_error() {

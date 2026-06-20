@@ -10,8 +10,7 @@
 
 #define UBRR 51
 
-
- void usart_init() {
+void usart_init() {
     /* To initialize USART/UART, the following must be configured: 
         UMSELn bits, 1:0, in UCSRnC Register (to configure asynchronous USART mode),
         UCSRnB and UCSRnC Register, UCSZN 2:0, UPMn 1:0, USBSn (to configure frame format),
@@ -54,6 +53,39 @@
     
     // Enable Transmitter Mode.
     UCSR0B |= (1 << TXEN0);
- }
+}
 
+void usart_transmit_byte(uint8_t data) {
+    /* To transmit a byte:
+        The UDREn Flag must be set (Data Register Empty), only when this flag is set will data will transmit.
 
+        Poll this bit, when set, write data to UDRn (USART I/O Data Register)
+    */
+
+    while (!(UCSR0A & (1 << UDRE0))); // Poll UDRE0 flag.
+
+    UDR0 = data; // Write data to I/O Data Register for transmission. (USART takes care of the rest).
+}
+
+void usart_print(char *msg) {
+    /*
+    To print messages to MTTTY (for debugging purposes).
+    This function makes use of the created usart_tranasmit_byte() function.
+
+    This function takes a pointer to a null-terminated string.
+    */
+
+    char *temp = msg; // Temporary pointer for pointer arithmetic. (Incrementing msg means it will no longer point to first char in msg).
+    while (*temp != '\0') { 
+        // Continually send the characters of string till null-terminator is reached.
+        usart_transmit_byte(*temp); // Transmit character.
+        temp++; // Increment to next character.
+    }
+}
+
+void usart_print_hex() {
+    /*
+    To print TWSR status codes to MTTTY (for debugging purposes).
+    This function makes use of the created usart_tranasmit_byte() function.
+    */
+}

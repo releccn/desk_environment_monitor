@@ -14,8 +14,8 @@ void usart_init();
 
 void usart_transmit_byte(uint8_t data);
 
-void usart_print();
+void usart_print(char *msg);
 
-void usart_print_hex(); 
+void usart_print_hex(uint8_t twsr_bits);
 
 #endif

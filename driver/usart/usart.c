@@ -83,9 +83,31 @@ void usart_print(char *msg) {
     }
 }
 
-void usart_print_hex() {
+void usart_print_hex(uint8_t twsr_bits) {
     /*
     To print TWSR status codes to MTTTY (for debugging purposes).
     This function makes use of the created usart_tranasmit_byte() function.
     */
+	
+	// Extract bits while maintaining original position.
+	char lower = twsr_bits & 0x0F; // Lower four TWSR bits, ex. 0b0000llll.
+	char higher = (twsr_bits & 0xF0) >> 4; // Higher four TWSR bits and position, ex. 0bhhhh0000.
+	
+	// Transmit ASCII value (higher first).
+	if (higher < 10) {
+		// Lower + 48 (converts to ASCII, 0-9)
+		usart_transmit_byte(higher + 48);
+		} else {
+		// Lower + 55 (converts to ASCII, A-F).
+		usart_transmit_byte(higher + 55);
+	}
+
+	if (lower < 10) {
+		// Lower + 48 (converts to ASCII, 0-9).
+		usart_transmit_byte(lower + 48);
+		} else {
+		// Lower + 55 (converts to ASCII, A-F).
+		usart_transmit_byte(lower + 55);
+	}
+	
 }

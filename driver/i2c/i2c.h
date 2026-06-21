@@ -35,7 +35,7 @@ uint8_t i2c_read_bytes(uint8_t sla_r, uint8_t len, uint8_t *buff);
 // Reset bus if transmission fails (implement IF necessary).
 void i2c_reset();
 
-// Error message sent to UART (implement later, after UART Driver).
-void i2c_error();
+// Error message sent to UART.
+void i2c_error(uint8_t twsr_bits);
 
 #endif

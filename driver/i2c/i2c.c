@@ -8,6 +8,9 @@
 #include <avr/io.h>
 #include <util/twi.h>
 #include "i2c.h"
+#include "usart/usart.h"
+
+#define I2C_TWSR_STATUS (TWSR & 0xF8)
 
 void i2c_init() {
 	/* To initialize TWI/I2C, the following must be configured:
@@ -48,7 +51,7 @@ uint8_t i2c_start() {
 	
 	// Verify that successful START condition. Otherwise, error. 
 	if ((TWSR & 0xF8) != TW_START) { // TW_START = 0x08 (Status Code for TWSR)
-		i2c_error(); // for UART
+		i2c_error(I2C_TWSR_STATUS); // for UART
 		return I2C_ERROR;
 	}
 	
@@ -91,7 +94,7 @@ uint8_t i2c_write_byte(uint8_t data) {
 	
 	// Verify DATA has been transmitted and ACK is received.
 	if (((TWSR & 0xF8) != TW_MT_SLA_ACK) && ((TWSR & 0xF8) != TW_MT_DATA_ACK)) { // TW_MT_DATA_ACK = 0x28 (Status Code for TWSR)
-		i2c_error(); // for UART												 // TW_MT_SLA_ACK = 0x18 (Status Code for TWSR)
+		i2c_error(I2C_TWSR_STATUS); // for UART												 // TW_MT_SLA_ACK = 0x18 (Status Code for TWSR)
 		return I2C_ERROR;
 	}
 	
@@ -112,7 +115,7 @@ uint8_t i2c_read_byte(uint8_t ACK_NACK, uint8_t *data) {
 										
 		// Verify that data byte has been received, ACK returned. (Check TWSR).
 		if ((TWSR & 0xF8) != TW_MR_DATA_ACK) {
-			i2c_error(); // for UART													
+			i2c_error(I2C_TWSR_STATUS); // for UART													
 			return I2C_ERROR;
 		}
 		*data = TWDR; // Write TWDR to user-defined variable address.
@@ -127,7 +130,7 @@ uint8_t i2c_read_byte(uint8_t ACK_NACK, uint8_t *data) {
 		
 		// Verify that data byte has been received, NACK returned.	(Check TWSR).
 		if ((TWSR & 0xF8) != TW_MR_DATA_NACK) {
-			i2c_error(); // for UART
+			i2c_error(I2C_TWSR_STATUS); // for UART
 			return I2C_ERROR;
 		}
 		
@@ -186,7 +189,9 @@ uint8_t i2c_read_bytes(uint8_t sla_r, uint8_t len, uint8_t *buff) {
 	
 }
 
-void i2c_error() {
+void i2c_error(uint8_t twsr_bits) {
 	// TODO: Implement printing error to UART
-	
+	usart_print("ERROR: I2C - 0x");
+	usart_print_hex(twsr_bits);
+	usart_print("\r\n");
 }

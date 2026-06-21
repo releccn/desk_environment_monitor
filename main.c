@@ -18,9 +18,10 @@ int main(void)
 	usart_init();
 	i2c_init();
 	
-	i2c_scanner();
     while (1) {
-		
+		i2c_scanner();
+		usart_print("--- Scan Complete ---\r\n");
+		_delay_ms(5000);
     }
 }
 

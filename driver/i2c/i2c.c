@@ -8,7 +8,7 @@
 #include <avr/io.h>
 #include <util/twi.h>
 #include "i2c.h"
-#include "usart/usart.h"
+#include "../usart/usart.h"
 
 #define I2C_TWSR_STATUS (TWSR & 0xF8)
 

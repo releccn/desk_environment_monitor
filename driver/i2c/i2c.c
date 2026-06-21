@@ -28,9 +28,9 @@ void i2c_init() {
 	
 	TWBR = (1 << 5); // 32, 0b00100000 (Modify ALL bits in register)
 	
-	TWSR &= ~((1 << TWPS1) | (1 << TWPS0)); // 0bxxxxx-00 (TWPS1 = 0, TWPS0 = 0, Prescaler Value = 1) (Modify ONLY prescalar bits in register)
+	TWSR = 0x00; // 0bxxxxx-00 (TWPS1 = 0, TWPS0 = 0, Prescaler Value = 1) (Modify ONLY prescalar bits in register)
 	
-	TWCR |= (1 << TWEN); // Set Enable Bit
+	TWCR = (1 << TWEN); // Set Enable Bit
 }
 
 uint8_t i2c_start() {
@@ -43,20 +43,21 @@ uint8_t i2c_start() {
 	*/
 	
 	// Send start condition.
-	TWCR |= (1 << TWSTA) | (1 << TWINT); // In datasheet, example code sets TWEN here BUT
-										 // TWEN is already set in initialization.
+	TWCR = (1 << TWSTA) | (1 << TWINT) | (1 << TWEN); // In datasheet, example code sets TWEN here 
 	
-	// Wait for TWINT Flag to set by hardware to indicate START condition has been transmitted.			
+	// Wait for TWINT Flag to set by hardware to indicate START condition has been transmitted.		
 	while (!(TWCR & (1 << TWINT))); // Poll till TWCR & (1 << TWINT) == TRUE (i.e TWINT is set).
+	//usart_print("TWINT set!\r\n");	
 	
 	// Verify that successful START condition. Otherwise, error. 
-	if ((TWSR & 0xF8) != TW_START) { // TW_START = 0x08 (Status Code for TWSR)
+	if (((TWSR & 0xF8) != TW_START) && ((TWSR & 0xF8) != TW_REP_START))  { // TW_START = 0x08 (Status Code for TWSR)
+																		   // TW_REP_START = 0x10 (Status Code for TWSR)
+		usart_print("START FAILED: ");
 		i2c_error(I2C_TWSR_STATUS); // for UART
 		return I2C_ERROR;
 	}
 	
-	// Clear TWSTA Bit once START condition has been transmitted.
-	TWCR &= ~(1 << TWSTA);
+	// Clear TWSTA Bit once START condition has been transmitted. (This is done internally).
 	return I2C_SUCCESS;
 }
 
@@ -70,8 +71,9 @@ void i2c_stop() {
 	*/
 	
 	// Send STOP condition.
-	TWCR |= (1 << TWSTO) | (1 << TWINT); // In datasheet, example code sets TWEN here BUT
-										 // TWEN is already set in initialization.
+	TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO); // In datasheet, example code sets TWEN here
+	
+	while (TWCR & (1 << TWSTO)); // Wait for STOP condition to complete transmitting (before another START).
 	
 	// TWINT Flag is NOT set to indicate STOP has been transmitted.
 }
@@ -86,7 +88,8 @@ uint8_t i2c_write_byte(uint8_t data) {
 	
 	// Address/Data transmission.
 	TWDR = data;
-	TWCR |= (1 << TWINT); // Clear TWINT to start address/data transmission.
+	
+	TWCR = (1 << TWINT) | (1 << TWEN); // Clear TWINT to start address/data transmission.
 	
 	// Wait for TWINT flag to set by hardware to indicate address/data has been transmitted
 	//												  and ACK/NACK has been received
@@ -94,6 +97,7 @@ uint8_t i2c_write_byte(uint8_t data) {
 	
 	// Verify DATA has been transmitted and ACK is received.
 	if (((TWSR & 0xF8) != TW_MT_SLA_ACK) && ((TWSR & 0xF8) != TW_MT_DATA_ACK)) { // TW_MT_DATA_ACK = 0x28 (Status Code for TWSR)
+		usart_print("WRITE FAILED: ");
 		i2c_error(I2C_TWSR_STATUS); // for UART												 // TW_MT_SLA_ACK = 0x18 (Status Code for TWSR)
 		return I2C_ERROR;
 	}
@@ -108,7 +112,7 @@ uint8_t i2c_read_byte(uint8_t ACK_NACK, uint8_t *data) {
 	// Returns byte received from TWDR (Data Register).
 	
 	if (ACK_NACK == ACK) {
-		TWCR |= (1 << TWEA) | (1 << TWINT); // Set TWEA (enable ack) bit, and clear TWINT to begin read.
+		TWCR = (1 << TWEA) | (1 << TWINT) | (1 << TWEN); // Set TWEA (enable ack) bit, and clear TWINT to begin read.
 		
 		while (!(TWCR & (1 << TWINT))); // Poll till TWINT flag is set by hardware
 										// to indicate data can be read from TWDR.
@@ -123,7 +127,7 @@ uint8_t i2c_read_byte(uint8_t ACK_NACK, uint8_t *data) {
 		
 	} else if (ACK_NACK == NACK) { // Last byte has been received.
 		// MR should inform ST by sending NACK (i.e. clearing TWEA) after last received data byte.
-		TWCR = (TWCR & ~(1 << TWEA)) | (1 << TWINT); // Clear TWEA (enable ack) bit, and clear TWINT to begin read.
+		TWCR = (TWCR & ~(1 << TWEA)) | (1 << TWINT) | (1 << TWEN); // Clear TWEA (enable ack) bit, and clear TWINT to begin read.
 		
 		while (!(TWCR & (1 << TWINT))); // Poll till TWINT flag is set by hardware
 										// to indicate data can be read from TWDR.
@@ -190,7 +194,8 @@ uint8_t i2c_read_bytes(uint8_t sla_r, uint8_t len, uint8_t *buff) {
 }
 
 void i2c_error(uint8_t twsr_bits) {
-	// TODO: Implement printing error to UART
+	// Print error to UART
+	
 	usart_print("ERROR: I2C - 0x");
 	usart_print_hex(twsr_bits);
 	usart_print("\r\n");

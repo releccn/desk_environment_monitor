@@ -11,17 +11,17 @@
 #include "driver/i2c/i2c.h"
 #include "driver/usart/usart.h"
 #include "tools/i2c_scanner.h"
-#include <util/delay.h>
 
 int main(void)
 {
 	usart_init();
 	i2c_init();
 	
-    while (1) {
-		i2c_scanner();
-		usart_print("--- Scan Complete ---\r\n");
-		_delay_ms(5000);
-    }
+	usart_print("Starting scan...\r\n");
+	i2c_scanner();
+	usart_print("Scan complete.\r\n");
+	while (1) {
+		
+	}
 }
 

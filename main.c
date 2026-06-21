@@ -16,10 +16,6 @@ int main(void)
 {
 	usart_init();
 	i2c_init();
-	
-	usart_print("Starting scan...\r\n");
-	i2c_scanner();
-	usart_print("Scan complete.\r\n");
 	while (1) {
 		
 	}

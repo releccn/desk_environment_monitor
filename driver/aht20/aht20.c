@@ -44,3 +44,84 @@ void aht20_init() {
 	}
 	return;
 }
+
+void aht20_trigger_measurement() {
+	/* To trigger measurement,
+		Send 0xAC command. Parameters of this command has two bytes: 0x33 and 0x00.
+		Then wait 80ms for measurement to be completed.
+	*/
+	uint8_t trigger_command[] = {0xAC, 0x33, 0x00};
+	i2c_write_bytes(aht20SLA_W, 3, trigger_command);
+	_delay_ms(80);
+}
+
+void aht20_read_data(uint8_t *dataArr) {
+	/* After 80ms has surpassed (after trigger measurement), measurement should be completed.
+	
+	To verify, check the status word bit [7] is 0, then the measurement is complete and
+	the next six consecutive bytes can be read. 
+	
+	Otherwise, wait till the bit [7] is 0. (Poll every 15ms after the initial 80ms).
+	
+	This function modifies user defined data array (this array should hold 7 elements ONLY).
+	*/
+		// State, Humidity Data, Humidity Data,
+		// Humidity Temperature, Temperature Data, Temperature Data
+		// CRC data
+	
+	// Check if ready to read.
+	uint8_t status = 0x80; // Status word buffer (Initial: 0b1000000)
+	while (status & (1 << 7)) { // Wait till status word bit 7 is cleared.
+		i2c_read_bytes(aht20SLA_R, 1 , &status); // Write status word to status variable.
+		_delay_ms(15);
+	}
+	
+	// Measurement ready.
+	i2c_read_bytes(aht20SLA_R, 6, dataArr); // Write all 7 consecutive bytes to data array (includes CRC data).
+}
+
+void aht20_conversion(uint8_t *dataArr, float *convertedValArr) {
+	/*
+	Convert the data from byte form to readable values.
+	dataArr - contains 7 consecutive bytes read from AHT20.
+	convertedValArr - user-defined array to write converted values to.
+	
+	20 Humidity Data bits.
+	20 Temperature Data bits.
+	
+	Extraction of these bits will be done by brute force since shifts are non uniform.
+	
+	dataArr[1] - Humidity Data [19:12] - MSB
+	dataArr[2] - Humidity Data [11:4] 
+	dataArr[3] - Humidity Data [3:0] (MSB nibble, four higher bits) - LSB
+	
+	dataArr[3] - Temperature Data [19:16] (LSB nibble, four lower bits) - MSB
+	dataArr[4] - Temperature Data [15:8]
+	dataArr[5] - Temperature Data [7:0] - LSB
+	dataArr[6] - CRC Data (non relevant).
+	
+	
+	*/
+	
+	uint32_t humidityBits = 0x00000000;
+	uint32_t temperatureBits = 0x00000000;
+	
+	humidityBits = (uint32_t)dataArr[1] << 12; // MSB in bit 19 position.
+	humidityBits |= (uint32_t)dataArr[2] << 4; 
+	humidityBits |= (uint32_t)dataArr[3] >> 4; // LSB 
+	
+	temperatureBits = (uint32_t)(dataArr[3] & 0x0F) << 16; // Isolate lower nibble.
+	temperatureBits |= (uint32_t)dataArr[4] << 8;
+	temperatureBits |= (uint32_t)dataArr[5];
+	
+	// Conversion Calculations (floats)
+	// 2^20 = 1048576
+	// S_RH = Output Signal Relative Humidity
+	// S_T = Output Signal Temperature
+	
+	float rh = ( (float)humidityBits / 1048576.0f ) * 100.0f; // Percentage
+	float t =  (( (float)temperatureBits / 1048576.0f ) * 200.0f ) - 50f; // Celcius
+	
+	convertedValArr[0] = rh;
+	convertedValArr[1] = t;
+}

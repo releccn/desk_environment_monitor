@@ -23,7 +23,7 @@ void i2c_init() {
 	   f_SCL = 100kHz
 	   f_CPU = 8MHz
 	   Pre-scaler = 1
-	   TWBR = 32
+	   TWBR = 32 (calculated using formula given in datasheet)
 	*/
 	
 	TWBR = (1 << 5); // 32, 0b00100000 (Modify ALL bits in register)
@@ -47,7 +47,6 @@ uint8_t i2c_start() {
 	
 	// Wait for TWINT Flag to set by hardware to indicate START condition has been transmitted.		
 	while (!(TWCR & (1 << TWINT))); // Poll till TWCR & (1 << TWINT) == TRUE (i.e TWINT is set).
-	//usart_print("TWINT set!\r\n");	
 	
 	// Verify that successful START condition. Otherwise, error. 
 	if (((TWSR & 0xF8) != TW_START) && ((TWSR & 0xF8) != TW_REP_START))  { // TW_START = 0x08 (Status Code for TWSR)
@@ -195,7 +194,6 @@ uint8_t i2c_read_bytes(uint8_t sla_r, uint8_t len, uint8_t *buff) {
 
 void i2c_error(uint8_t twsr_bits) {
 	// Print error to UART
-	
 	usart_print("ERROR: I2C - 0x");
 	usart_print_hex(twsr_bits);
 	usart_print("\r\n");

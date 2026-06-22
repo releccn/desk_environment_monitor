@@ -95,9 +95,10 @@ uint8_t i2c_write_byte(uint8_t data) {
 	while (!(TWCR & (1 << TWINT)));
 	
 	// Verify DATA has been transmitted and ACK is received.
-	if (((TWSR & 0xF8) != TW_MT_SLA_ACK) && ((TWSR & 0xF8) != TW_MT_DATA_ACK)) { // TW_MT_DATA_ACK = 0x28 (Status Code for TWSR)
+	if (((TWSR & 0xF8) != TW_MT_SLA_ACK) && ((TWSR & 0xF8) != TW_MT_DATA_ACK) && ((TWSR & 0xF8) != TW_MR_SLA_ACK)) { // TW_MT_DATA_ACK = 0x28 (Status Code for TWSR)
 		usart_print("WRITE FAILED: ");
 		i2c_error(I2C_TWSR_STATUS); // for UART												 // TW_MT_SLA_ACK = 0x18 (Status Code for TWSR)
+																							// TW_MR_SLA_ACK = 0x40 (Status Code for TWSR)
 		return I2C_ERROR;
 	}
 	

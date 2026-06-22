@@ -18,4 +18,6 @@ void usart_print(char *msg);
 
 void usart_print_hex(uint8_t twsr_bits);
 
+void usart_print_float(float val, uint8_t decimal_places);
+
 #endif

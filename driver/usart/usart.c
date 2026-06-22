@@ -5,8 +5,9 @@
  *  Author: JR
  */ 
 
- #include "usart.h"
- #include <avr/io.h>
+#include "usart.h"
+#include <avr/io.h>
+#include <stdlib.h> // dtostrf
 
 #define UBRR 51
 
@@ -110,4 +111,11 @@ void usart_print_hex(uint8_t twsr_bits) {
 		usart_transmit_byte(lower + 55);
 	}
 	
+}
+
+void usart_print_float(float val, uint8_t decimal_places) {
+	char buff[8]; // (-)xx.x\0
+	dtostrf(val, 5 , 1, buff);
+	usart_print(buff);
+	usart_print("\r\n");
 }

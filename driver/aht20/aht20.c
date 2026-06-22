@@ -8,11 +8,11 @@
 /* 
 This driver was created by referencing the ASAIR AHT20 datasheet found online.
 */
-
 #define F_CPU 8000000UL // Crystal Frequency, configured to use internal 8MHz CO.
 
 #include <util/delay.h>
 #include "../i2c/i2c.h"
+#include "../usart/usart.h"
 
 #define aht20SLA_R ((0x38 << 1) | 1) // 0x01111001 (SLA + R)
 #define aht20SLA_W (0x38 << 1) // 0x01111000 (SLA + W)
@@ -21,24 +21,23 @@ void aht20_init() {
 	/* According to data sheet, 
 		Wait 40ms after power on.
 		
-		*Status word is obtained by sending 0x71 to the device.
+		*Status word is obtained by reading from 0x71 on the device.
 		Before reading temperature and humidity values, check if calibration enable bit [3] of status word is SET.
 			If calibration enable bit [3] is NOT SET, send initialization command (1. 0x08 2. 0x00) then wait 10ms.
 	*/
 	_delay_ms(40);
 	uint8_t init_command[] = {0xBE, 0x08, 0x00}; // Sequence for calibration initialization.
-	uint8_t status_command[] = {0x71}; // To obtain status word as stated in datasheet.
-		
-	i2c_write_bytes(aht20SLA_W, 1, status_command); // Select slave device.
 
 	uint8_t status = 0x00; // Status word buffer
 	i2c_read_bytes(aht20SLA_R, 1 , &status); // Write status word to status variable.
 	
 	
 	if (status & (1 << 3)) { // If calibration enable bit is SET.
+		usart_print("Already calibrated\r\n");
 		return; // Complete initialization, no need to calibrate.
 	} else {
 		// Not calibrated. 
+		usart_print("Not calibrated. Sending init command\r\n");
 		i2c_write_bytes(aht20SLA_W, 3, init_command); // Perform initialization/calibration.
 		_delay_ms(10);
 	}
@@ -77,12 +76,12 @@ void aht20_read_data(uint8_t *dataArr) {
 	}
 	
 	// Measurement ready.
-	i2c_read_bytes(aht20SLA_R, 6, dataArr); // Write all 7 consecutive bytes to data array (includes CRC data).
+	i2c_read_bytes(aht20SLA_R, 7, dataArr); // Write all 7 consecutive bytes to data array (includes State and CRC data).
 }
 
 void aht20_conversion(uint8_t *dataArr, float *convertedValArr) {
 	/*
-	Convert the data from byte form to readable values.
+	Convert the raw data from byte form to readable values.
 	dataArr - contains 7 consecutive bytes read from AHT20.
 	convertedValArr - user-defined array to write converted values to.
 	
@@ -91,6 +90,7 @@ void aht20_conversion(uint8_t *dataArr, float *convertedValArr) {
 	
 	Extraction of these bits will be done by brute force since shifts are non uniform.
 	
+	dataArr[0] - State (SKIP THIS).
 	dataArr[1] - Humidity Data [19:12] - MSB
 	dataArr[2] - Humidity Data [11:4] 
 	dataArr[3] - Humidity Data [3:0] (MSB nibble, four higher bits) - LSB
@@ -118,8 +118,9 @@ void aht20_conversion(uint8_t *dataArr, float *convertedValArr) {
 	// S_T = Output Signal Temperature
 	
 	float rh = ( (float)humidityBits / 1048576.0f ) * 100.0f; // Percentage
-	float t =  (( (float)temperatureBits / 1048576.0f ) * 200.0f ) - 50f; // Celsius
+	float t =  (( (float)temperatureBits / 1048576.0f ) * 200.0f ) - 50.0f; // Celsius
 	
+	// Mutate convertedValArr
 	convertedValArr[0] = rh;
 	convertedValArr[1] = t;
 }

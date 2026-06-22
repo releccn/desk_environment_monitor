@@ -99,20 +99,18 @@ void aht20_conversion(uint8_t *dataArr, float *convertedValArr) {
 	dataArr[4] - Temperature Data [15:8]
 	dataArr[5] - Temperature Data [7:0] - LSB
 	dataArr[6] - CRC Data (non relevant).
-	
-	
 	*/
 	
-	uint32_t humidityBits = 0x00000000;
-	uint32_t temperatureBits = 0x00000000;
+	uint32_t humidityBits = 0x00000000; // Placeholder Value.
+	uint32_t temperatureBits = 0x00000000; // Placeholder Value.
 	
-	humidityBits = (uint32_t)dataArr[1] << 12; // MSB in bit 19 position.
-	humidityBits |= (uint32_t)dataArr[2] << 4; 
-	humidityBits |= (uint32_t)dataArr[3] >> 4; // LSB 
+	humidityBits = (uint32_t)dataArr[1] << 12; // Shift left by 12.
+	humidityBits |= (uint32_t)dataArr[2] << 4; // Shift left by 4.
+	humidityBits |= (uint32_t)dataArr[3] >> 4; // Isolate higher nibble.
 	
-	temperatureBits = (uint32_t)(dataArr[3] & 0x0F) << 16; // Isolate lower nibble.
-	temperatureBits |= (uint32_t)dataArr[4] << 8;
-	temperatureBits |= (uint32_t)dataArr[5];
+	temperatureBits = (uint32_t)(dataArr[3] & 0x0F) << 16; // Isolate lower nibble then shift left by 16.
+	temperatureBits |= (uint32_t)dataArr[4] << 8; // Shift left by 8.
+	temperatureBits |= (uint32_t)dataArr[5]; // No shift.
 	
 	// Conversion Calculations (floats)
 	// 2^20 = 1048576
@@ -120,7 +118,7 @@ void aht20_conversion(uint8_t *dataArr, float *convertedValArr) {
 	// S_T = Output Signal Temperature
 	
 	float rh = ( (float)humidityBits / 1048576.0f ) * 100.0f; // Percentage
-	float t =  (( (float)temperatureBits / 1048576.0f ) * 200.0f ) - 50f; // Celcius
+	float t =  (( (float)temperatureBits / 1048576.0f ) * 200.0f ) - 50f; // Celsius
 	
 	convertedValArr[0] = rh;
 	convertedValArr[1] = t;

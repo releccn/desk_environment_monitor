@@ -54,7 +54,7 @@ void aht20_trigger_measurement() {
 	_delay_ms(80);
 }
 
-void aht20_read_data(uint8_t *dataArr) {
+void aht20_read_raw(uint8_t *dataArr) {
 	/* After 80ms has surpassed (after trigger measurement), measurement should be completed.
 	
 	To verify, check the status word bit [7] is 0, then the measurement is complete and

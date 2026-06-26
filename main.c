@@ -24,19 +24,38 @@ int main(void) {
 	
 	uint8_t calibArr[24];
 	
+	aht20_init();
+	usart_print("AHT20 Initialized\r\n");
 	bmp280_init(calibArr);
 	usart_print("BMP280 Initialized\r\n");
 	
-	uint8_t data[6];
-	float convertedData[2];
+	uint8_t data_AHT20[7];
+	uint8_t data_BMP280[6];
 	
-	usart_print("Starting BMP280 measurement taking!\r\n");
+	float convertedData_AHT20[2];
+	float convertedData_BMP280[2];
+	
+	usart_print("Starting AHT20+BMP280 measurement taking!\r\n");
 	while (1) {
-		bmp280_read_raw(data);
-		bmp280_conversion(calibArr, data, convertedData);
+		
+		aht20_trigger_measurement();
+		aht20_read_raw(data_AHT20);
+		aht20_conversion(data_AHT20, convertedData_AHT20);
+		
+		bmp280_read_raw(data_BMP280);
+		bmp280_conversion(calibArr, data_BMP280, convertedData_BMP280);
 
 		usart_print("Pressure (Pa): ");
-		usart_print_float(convertedData[1], 1);
+		usart_print_float(convertedData_BMP280[1], 1);
+		
+		usart_print("RH (%): ");
+		usart_print_float(convertedData_AHT20[0], 1);
+
+		usart_print("(AHT20) Temperature (C): ");
+		usart_print_float(convertedData_AHT20[1], 1);
+		
+		usart_print("(BMP280) Temperature (C): ");
+		usart_print_float(convertedData_BMP280[0], 1);
 		_delay_ms(3000);
 	}
 	

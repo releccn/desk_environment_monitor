@@ -8,6 +8,20 @@
 #include "../i2c/i2c.h"
 #include "../usart/usart.h"
 
+#define R_chip_id 0xD0
+
+#define R_compensation_start 0x88
+#define R_compensation_end 0x9F
+
+#define R_ctrl_meas 0xF4
+#define R_config 0xF5
+
+#define R_pressureData_start 0xF7
+#define R_pressureData_end 0xF9
+
+#define bmp280SLA_R ((0x77 << 1) | 1) // 0x01111001 (SLA + R)
+#define bmp280SLA_W (0x77 << 1) // 0x01111000 (SLA + W)
+
 void bmp280_init(uint8_t *calibArr) {
 	// calibArr should be 24 bytes large. (array of uint8_t's with size 24, uint8_t calibArr[24] = {...,}).
 	/*
@@ -69,14 +83,13 @@ void bmp280_init(uint8_t *calibArr) {
 		SPI Interface: Disabled (using I2C). (0) (spi3w_en[0]).
 		
 		config == 0b0110000 (48 in decimal);
-	*/7
+	*/
 	uint8_t config = 0x60;
 	uint8_t config_command[] = {R_config, config};
 		
 	i2c_write_bytes(bmp280SLA_W, 2, config_command);
 		
 	// Configuration complete.
-	usart_print("BMP280 initialization complete!\r\n");
 }
 
 void bmp280_read_raw(uint8_t *dataArr) {
@@ -137,11 +150,11 @@ void bmp280_conversion(uint8_t *calibArr, uint8_t *dataArr, float *convertedValA
 	dig_P9 = dig_P2_P9[7],
 	*/
 	
-	// Pressure bits
+	// Pressure bits.
 	uint32_t pressureBits = (uint32_t)dataArr[0] << 12 | // Shift left 12.
 							(uint32_t)dataArr[1] << 4 |  // Shift left 4.
 							(uint32_t)dataArr[2] >> 4;   // Isolate high nibble (set as last 4 bits).
-							
+	// Temperature bits.		
 	uint32_t temperatureBits = (uint32_t)dataArr[3] << 12 | // Shift left 12.
 							   (uint32_t)dataArr[4] << 4 |  // Shift left 4.
 							   (uint32_t)dataArr[5] >> 4;   // Isolate high nibble (set as last 4 bits).

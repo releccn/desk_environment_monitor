@@ -11,6 +11,7 @@
 #include "driver/i2c/i2c.h"
 #include "driver/usart/usart.h"
 #include "driver/aht20/aht20.h"
+#include "driver/bmp280/bmp280.h"
 #include "tools/i2c_scanner.h"
 #include <util/delay.h>
 
@@ -21,23 +22,20 @@ int main(void) {
 	i2c_init();
 	usart_print("USART and I2C Initialized\r\n");
 	
-	aht20_init();
-	usart_print("AHT20 Initialized\r\n");
+	uint8_t calibArr[24];
 	
-	uint8_t data[7];
+	bmp280_init(calibArr);
+	usart_print("BMP280 Initialized\r\n");
+	
+	uint8_t data[6];
 	float convertedData[2];
 	
-	usart_print("Starting measurement taking!\r\n");
+	usart_print("Starting BMP280 measurement taking!\r\n");
 	while (1) {
-		aht20_trigger_measurement();
-		aht20_read_data(data);
-		aht20_conversion(data, convertedData);
-		
+		bmp280_read_raw(data);
+		bmp280_conversion(calibArr, data, convertedData);
 
-		usart_print("RH (%): ");
-		usart_print_float(convertedData[0], 1);
-		
-		usart_print("Temperature (C): ");
+		usart_print("Pressure (Pa): ");
 		usart_print_float(convertedData[1], 1);
 		_delay_ms(3000);
 	}

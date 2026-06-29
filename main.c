@@ -12,6 +12,7 @@
 #include "driver/usart/usart.h"
 #include "driver/aht20/aht20.h"
 #include "driver/bmp280/bmp280.h"
+#include "driver/lcd/lcd.h"
 #include "tools/i2c_scanner.h"
 #include <util/delay.h>
 

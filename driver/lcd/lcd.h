@@ -20,7 +20,7 @@ void lcd_init();
 
 void lcd_clear();
 
-void lcd_setcursor();
+void lcd_setcursor(uint8_t row, uint8_t col);
 
 void lcd_print();
 

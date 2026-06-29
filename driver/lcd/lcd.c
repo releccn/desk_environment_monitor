@@ -123,3 +123,43 @@ void lcd_clear() {
 	lcd_send_byte(0x01, 0);
 	_delay_ms(1.52); // 1.52ms execution.
 }
+
+void lcd_setcursor(uint8_t row, uint8_t col) {
+	/*
+	Set cursor position on LCD by writing to DDRAM.
+	
+	Line 1: 0x00 - 0x27 
+	Line 2: 0x40 - 0x67
+	
+	There are only 16 cols on the LCD display so the only addresses that get written to are actually:
+	Line 1: 0x00 + 16 = 0x10
+	Line 2: 0x40 + 16 = 0x50
+	*/
+	uint8_t address = 0x00;
+	
+	if (!row) { // Row 0
+		address = 0x80 | (0x00 + col);
+		lcd_send_byte(address, 0);
+		_delay_us(38);
+	} else { // Row 1
+		address =  0x80 | (0x40 + col);
+		lcd_send_byte(address, 0);
+		_delay_us(38);
+	}
+}
+
+void lcd_print(char *str) {
+	/*
+	Prints a string to the LCD display
+	
+	Strings should be restricted to at most 16 characters.
+	
+	The LCD display increments DDRAM automatically for each char written.
+	*/
+	char *temp = str; // Temporary pointer for pointer arithmetic. (Similar to USART driver).
+	while (*temp != '\0') {
+		// Continually send the characters of string till null-terminator is reached.
+		lcd_send_byte(*temp, 1); // Transmit character (to data register, RS = 1).
+		temp++; // Increment to next character.
+	}
+}

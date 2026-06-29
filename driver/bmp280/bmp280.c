@@ -184,7 +184,7 @@ void bmp280_conversion(uint8_t *calibArr, uint8_t *dataArr, float *convertedValA
 	p = (p - (var4 / 4096.0)) * 6250.0 / var3;
 	var3 = ((double)dig_P2_P9[7]) * p * p / 2147483648.0;
 	var4 = p * ((double)dig_P2_P9[6]) / 32768.0;
-	p = p + (var3 + var4 + ((double)dig_P2_P9[5])) / 16.0; // Pressure: "xxxxx.x"
+	p = (p + (var3 + var4 + ((double)dig_P2_P9[5])) / 16.0) / 1000; // Pressure: "xxxxx.x" (divided by 1000 for kPa)
 	
 	convertedValArr[0] = T; // Temperature in index 0.
 	convertedValArr[1] = p; // Pressure in index 1.

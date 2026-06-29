@@ -18,6 +18,8 @@ void lcd_send_byte(uint8_t data, uint8_t rs);
 
 void lcd_init();
 
+// -------
+// User uses the functions below:
 void lcd_clear();
 
 void lcd_setcursor(uint8_t row, uint8_t col);

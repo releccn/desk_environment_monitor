@@ -22,42 +22,13 @@ int main(void) {
 	usart_init();
 	i2c_init();
 	usart_print("USART and I2C Initialized\r\n");
-	
-	uint8_t calibArr[24];
-	
-	aht20_init();
-	usart_print("AHT20 Initialized\r\n");
-	bmp280_init(calibArr);
-	usart_print("BMP280 Initialized\r\n");
-	
-	uint8_t data_AHT20[7];
-	uint8_t data_BMP280[6];
-	
-	float convertedData_AHT20[2];
-	float convertedData_BMP280[2];
-	
-	usart_print("Starting AHT20+BMP280 measurement taking!\r\n");
+	lcd_init();
+	usart_print("LCD Initialized\r\n");
+	lcd_setcursor(1, 1);
+	lcd_print("Hello World");
+
 	while (1) {
-		
-		aht20_trigger_measurement();
-		aht20_read_raw(data_AHT20);
-		aht20_conversion(data_AHT20, convertedData_AHT20);
-		
-		bmp280_read_raw(data_BMP280);
-		bmp280_conversion(calibArr, data_BMP280, convertedData_BMP280);
-
-		usart_print("Pressure (Pa): ");
-		usart_print_float(convertedData_BMP280[1], 1);
-		
-		usart_print("RH (%): ");
-		usart_print_float(convertedData_AHT20[0], 1);
-
-		usart_print("(AHT20) Temperature (C): ");
-		usart_print_float(convertedData_AHT20[1], 1);
-		
-		usart_print("(BMP280) Temperature (C): ");
-		usart_print_float(convertedData_BMP280[0], 1);
-		_delay_ms(3000);
+	
 	}
 	
 }

@@ -24,7 +24,7 @@ All of the firmware is written in bare metal C. Drivers AHT20, BMP280, LCD1602, 
 # Software Structure
 
 ```text
-drivers/
+driver/
 ├── i2c/
 │   ├── i2c.c
 │   └── i2c.h

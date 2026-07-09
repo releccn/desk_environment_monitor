@@ -1,4 +1,4 @@
-# Desk Environment Monitor
+# Desk Indoor Environment Monitor
 
 The device is a bare metal embedded system built around the **ATmega328P-PU** (the same MCU on the Arduino Uno).
 

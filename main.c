@@ -1,9 +1,11 @@
+
 /*
  * desk_environ_mon.c
  *
  * Created: 2026-06-12 00:05:49
  * Author : JR
  */ 
+
 
 #define F_CPU 8000000UL // Crystal Frequency, configured to use internal 8MHz CO.
 
@@ -36,6 +38,7 @@ int main(void) {
 	
 	// USART (for monitoring).
 	char uart_buf[8];
+	uint32_t uptime = 0;
 	
 	usart_init();
 	usart_print("USART: Init Complete\r\n");
@@ -78,7 +81,7 @@ int main(void) {
 		usart_print("\r\n");
 		
 		// Temperature, Humidity, Pressure as Integers.
-		int8_t temperature_rounded = (int8_t)(aht20_convertedValArr[1] + 0.5f); 
+		int8_t temperature_rounded = (int8_t)(aht20_convertedValArr[1]); 
 		uint8_t humidity_rounded = (uint8_t)(aht20_convertedValArr[0] + 0.5f);
 		uint8_t pressure_rounded = (uint8_t)(bmp280_convertedValArr[1] + 0.5f);
 		
@@ -103,8 +106,15 @@ int main(void) {
 		lcd_setcursor(1, 1);
 		lcd_print(lcd_line2);
 		
+		uptime += 2;
+		itoa(uptime, uart_buf, 10);
+		usart_print("Uptime: ");
+		usart_print(uart_buf);
+		usart_print("s\r\n");
 		_delay_ms(2000);
 	}
 	
-}
+} 
+
+
 

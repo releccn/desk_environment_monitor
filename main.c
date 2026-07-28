@@ -22,6 +22,9 @@
 #include <string.h>
 
 int main(void) {
+	
+	_delay_ms(500); // Allow for hardware to stabilize.
+	
 	// LCD
 	char lcd_line1[16];
 	char lcd_line2[16];
@@ -36,24 +39,16 @@ int main(void) {
 	uint8_t aht20_dataArr[7];
 	float aht20_convertedValArr[2];
 	
-	// USART (for monitoring).
-	char uart_buf[8];
-	uint32_t uptime = 0;
-	
 	usart_init();
-	usart_print("USART: Init Complete\r\n");
 	
 	i2c_init();
-	usart_print("I2C: Init Complete\r\n");
 	
 	aht20_init();
-	usart_print("AHT20: Init Complete\r\n");
 	
 	bmp280_init(bmp280_calibArr);
-	usart_print("BMP280: Init Complete\r\n");
 	
 	lcd_init();
-	usart_print("LCD: Init Complete\r\n");
+
 
 	while (1) {
 		
@@ -66,20 +61,7 @@ int main(void) {
 		bmp280_read_raw(bmp280_dataArr);
 		bmp280_conversion(bmp280_calibArr, bmp280_dataArr, bmp280_convertedValArr);
 		
-		// USART (for monitoring).
-		dtostrf(aht20_convertedValArr[1], 5, 2, uart_buf); // Temperature with 2 decimal places
-		usart_print("T:");
-		usart_print(uart_buf);
 
-		dtostrf(aht20_convertedValArr[0], 5, 2, uart_buf); // Humidity with 2 decimal places
-		usart_print(" H:");
-		usart_print(uart_buf);
-
-		dtostrf(bmp280_convertedValArr[1], 8, 2, uart_buf); // Pressure with 2 decimal places
-		usart_print(" P:");
-		usart_print(uart_buf);
-		usart_print("\r\n");
-		
 		// Temperature, Humidity, Pressure as Integers.
 		int8_t temperature_rounded = (int8_t)(aht20_convertedValArr[1]); 
 		uint8_t humidity_rounded = (uint8_t)(aht20_convertedValArr[0] + 0.5f);
@@ -102,15 +84,9 @@ int main(void) {
 		strcat(lcd_line2, val);
 		strcat(lcd_line2, "kPa");
 	
-		
 		lcd_setcursor(1, 1);
 		lcd_print(lcd_line2);
-		
-		uptime += 2;
-		itoa(uptime, uart_buf, 10);
-		usart_print("Uptime: ");
-		usart_print(uart_buf);
-		usart_print("s\r\n");
+
 		_delay_ms(2000);
 	}
 	

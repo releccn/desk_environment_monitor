@@ -56,17 +56,19 @@ The motivation behind this project is to ditch the Arduino libraries and build s
 
 # Project Status
 
-The project is currently in progress. The custom PCB I created in KiCad for this is currently being shipped, and in the meantime, I am planning out the CAD enclosure in Fusion 360.
+The project is currently in progress. 
 
 ---
 
-# Schematic
+# Schematic (updated)
 
-<img width="1134" height="781" alt="Screenshot 2026-07-09 142032" src="https://github.com/user-attachments/assets/992de505-f250-478e-8e4b-852fa529b4f7" />
+<img width="1133" height="779" alt="Screenshot 2026-07-28 160106" src="https://github.com/user-attachments/assets/1b0cab40-a41c-4570-9474-d9fb6bd58835" />
 
 ---
 
-# PCB Design
+# PCB Design (updated)
 
-<img width="1047" height="673" alt="Screenshot 2026-07-09 142107" src="https://github.com/user-attachments/assets/38f3bfea-fbff-4b73-b8dc-2033a1781263" />
-<img width="961" height="607" alt="Screenshot 2026-07-09 142050" src="https://github.com/user-attachments/assets/c6e4f3c1-2aea-4c35-a0d9-30d5bbfbb155" />
+<img width="1048" height="713" alt="Screenshot 2026-07-28 160212" src="https://github.com/user-attachments/assets/44cdc6a4-eea8-4c5e-a348-62a9827c3553" />
+<img width="1087" height="678" alt="Screenshot 2026-07-28 160156" src="https://github.com/user-attachments/assets/9e92edd7-6d6d-4fe9-92e9-b75c7971c631" />
+<img width="888" height="604" alt="Screenshot 2026-07-28 160137" src="https://github.com/user-attachments/assets/f4ebb258-d54b-42fc-8206-049ef10f08e0" />
+
